@@ -67,6 +67,7 @@ static int enable_force_inversion = 0;
 static int ignore_set_gain = 0;
 static int enable_offset_fix = 0;
 static int enable_throttling = 0;
+static int enable_evo_fix = 0;
 static FILE *log_file = NULL;
 static char report_string[1024];
 static short last_effect_used = 16;
@@ -210,6 +211,12 @@ static void ffbt_init()
         enable_offset_fix = 1;
     }
 
+    const char *evo_fix = getenv("FFBTOOLS_EVO_FIX");
+    if (evo_fix != NULL && strcmp(evo_fix, "1") == 0) {
+        enable_evo_fix = 1;
+    }
+
+
     const char *str_throttling = getenv("FFBTOOLS_THROTTLING");
     if (str_throttling != NULL && strcmp(str_throttling, "0") != 0) {
         int result;
@@ -238,11 +245,11 @@ static void ffbt_init()
     if (enable_logger && ftell(log_file) == 0) {
         report("# DEVICE_NAME=%s, UPDATE_FIX=%d, "
                 "DIRECTION_FIX=%d, DURATION_FIX=%d, FEATURES_HACK=%d, "
-                "FORCE_INVERSION=%d, IGNORE_SET_GAIN=%d, OFFSET_FIX=%d, "
+                "FORCE_INVERSION=%d, IGNORE_SET_GAIN=%d, OFFSET_FIX=%d, EVO_FIX=%d, "
                 "THROTTLING=%s",
                 getenv("FFBTOOLS_DEVICE_NAME"), enable_update_fix,
                 enable_direction_fix, enable_duration_fix, enable_features_hack,
-                enable_force_inversion, ignore_set_gain, enable_offset_fix,
+                enable_force_inversion, ignore_set_gain, enable_offset_fix, enable_evo_fix,
                 str_throttling == NULL ? "0" : str_throttling);
     }
 }
@@ -409,6 +416,14 @@ int ioctl(int fd, unsigned long request, char *argp)
                         "# direction fix", effect->id, effect->direction, type,
                         effect->replay.length, effect->replay.delay,
                         effect_params);
+            }
+
+            if (enable_evo_fix && effect->id != -1 && effect->type == FF_CONSTANT && effect->u.constant.level == -1) {
+                report("> UPLOAD id:%d dir:%d type:%s length:%d delay:%d %s "
+                        "# AC EVO \"fix\" <- this is throttled", effect->id, effect->direction, type,
+                        effect->replay.length, effect->replay.delay,
+                        effect_params);
+                throttled = true;
             }
 
             if (enable_force_inversion) {

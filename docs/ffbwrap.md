@@ -39,6 +39,9 @@ One or more of the following options can be used:
   `--offset-fix`: Proton sets `offset` and `phase` to incorrect values. This
   option fixes it.
 
+  `--evo-fix`: AC Evo (or Proton, or SDL) incorrectly scales CONSTANT force. 
+  It results in level to be set as `-1` instead of 32567. This option suppresses such values.
+
   `--throttling`: Puts a limit to the number of effect commands that can be
   sent to avoid filling the command queue of the device. It helps with issues
   like effect lag and "full queue" messages in the log.
